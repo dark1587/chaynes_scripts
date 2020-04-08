@@ -14,6 +14,26 @@ def extractAddress(fwConfig):
 
     return(uniqueAddresses)
 
+def extractAddressSetFromAddressSet(fwConfig):
+    addressSplit = []
+    addressSetFromAddressSet = {}
+
+    for line in fwConfig:
+        if re.match(r'set security address-book global address-set .* address-set', line):
+            addressSplit = line.split()
+
+            keyValue = addressSplit[5]
+            addressValue = addressSplit[7]
+
+            if keyValue in addressSetFromAddressSet:
+                addressSetFromAddressSet[keyValue].append(addressValue)
+
+            else:
+                addressSetFromAddressSet[keyValue] = []
+                addressSetFromAddressSet[keyValue].append(addressValue)
+
+    return(addressSetFromAddressSet)
+
 def extractAddressSet(fwConfig):
     addressSplit = []
     addressSetDictionary = {}
@@ -34,7 +54,15 @@ def extractAddressSet(fwConfig):
 
     return(addressSetDictionary)
 
-def compareEntries(uniqueAddress, uniqueAddressSet):
+def compareEntries(uniqueAddress, uniqueAddressSet, addressSetFromAddressSet):
+
+    for key, value in addressSetFromAddressSet.items():
+        for item in range(len(value)):
+            addressSetCompare = value[item]
+            if addressSetCompare in uniqueAddressSet:
+                for addressEntry in uniqueAddressSet[addressSetCompare]:
+                    uniqueAddressSet[key].append(addressEntry)
+
     for address in uniqueAddress:
         tempAddressSet = []
         for key, value in uniqueAddressSet.iteritems():
@@ -51,8 +79,9 @@ def main():
 
         compare = fwConfig.readlines()
         uniqueAddress = extractAddress(compare)
+        addressSetFromAddressSet = extractAddressSetFromAddressSet(compare)
         uniqueAddressSet = extractAddressSet(compare)
-        compareEntries(uniqueAddress, uniqueAddressSet)
+        compareEntries(uniqueAddress, uniqueAddressSet, addressSetFromAddressSet)
 
 if __name__ == "__main__":
     main()
